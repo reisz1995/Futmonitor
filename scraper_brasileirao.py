@@ -305,7 +305,7 @@ def main():
     # Executar scraping
     dados = scrape_brasileirao()
 
-        if dados:
+                if dados:
             print(f"\n📊 Dados coletados de {len(dados)} times")
 
             # Mostrar preview
@@ -344,4 +344,12 @@ def main():
             ]
 
             if supabase:
-                print("\n📡 Envi
+                print("\n📡 Enviando dados de fallback para teste...")
+                enviar_para_supabase(dados_fallback)
+
+        print("\n" + "="*60)
+        print(f"🏁 Finalizado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+        print("="*60)
+
+if __name__ == "__main__":
+    main()
