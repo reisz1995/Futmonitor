@@ -1,0 +1,44 @@
+name: Scraper Brasileirão Série A
+
+on:
+  schedule:
+    # Executar diariamente às 6h da manhã (UTC-3 = 9h UTC)
+    - cron: '0 9 * * *'
+
+  # Permitir execução manual
+  workflow_dispatch:
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Instalar dependências
+      run: |
+        pip install -r requirements.txt
+
+    - name: Executar scraper
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        python scraper_brasileirao.py
+
+    - name: Upload logs (se falhar)
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: error-logs
+        path: |
+          *.log
+          error.txt
+        retention-days: 5
