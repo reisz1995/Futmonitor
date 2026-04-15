@@ -38,11 +38,15 @@ def sanitizar_chave(texto):
     texto = re.sub(r'\s+', '_', texto)     
     return texto if texto else "coluna_desconhecida"
 
+
 def extrair_matriz_dinamica(html_source):
     """
     Sub-rotina de decodificação.
-    Executa a varredura do DOM e aplica o hotfix de deduplicação de chaves.
+    Executa a varredura do DOM e aplica o DTO Mapper para conformidade SQL.
     """
+    from bs4 import BeautifulSoup
+    from datetime import datetime
+    
     soup = BeautifulSoup(html_source, 'html.parser')
     tabelas = soup.find_all('table')
     
@@ -55,22 +59,35 @@ def extrair_matriz_dinamica(html_source):
     if not linhas:
         return []
 
-    # PATCH APLICADO AQUI: Extração paramétrica com Deduplicação de Colisão
+    # MATRIZ DE CONFIGURAÇÃO DTO (Força a realidade do Python a casar com o SQL)
+    MAPA_DE_SINTAXE = {
+        "n": "pos",
+        "pe": "empate",
+        "p1": "mandante_1",
+        "p2": "visitante_1",
+        "gols_marcados": "gols",
+        "gols_sofridos": "gols",
+        "campeao": "campeão"
+    }
+
     linha_cabecalho = linhas[0]
     chaves_brutas = [sanitizar_chave(th.get_text(strip=True)) for th in linha_cabecalho.find_all(['th', 'td'])]
     
     chaves = []
     for c in chaves_brutas:
-        base = c
+        # Interceptação: Traduz a chave se existir no mapa, senão mantém a original
+        base = MAPA_DE_SINTAXE.get(c, c)
+        
         contador = 1
-        while base in chaves:
-            base = f"{c}_{contador}"
+        chave_final = base
+        while chave_final in chaves:
+            chave_final = f"{base}_{contador}"
             contador += 1
-        chaves.append(base)
+        chaves.append(chave_final)
     
     dados_processados = []
 
-    # Processamento vetorial das linhas subsequentes
+    # Processamento vetorial (Inalterado)
     for idx in range(1, len(linhas)):
         colunas = linhas[idx].find_all(['td', 'th'])
         
@@ -81,7 +98,6 @@ def extrair_matriz_dinamica(html_source):
         for k_idx, chave in enumerate(chaves):
             valor_bruto = colunas[k_idx].get_text(strip=True)
             
-            # Inferência matemática de tipos
             if valor_bruto.isdigit():
                 entidade[chave] = int(valor_bruto)
             elif valor_bruto.replace('.', '', 1).isdigit() and valor_bruto.count('.') == 1:
@@ -98,6 +114,7 @@ def extrair_matriz_dinamica(html_source):
         dados_processados.append(entidade)
 
     return dados_processados
+    
 
 def operar_pipeline_multinodo():
     """Motor central: orquestra iteração de rede, extração (parser) e persistência."""
