@@ -59,23 +59,26 @@ def extrair_matriz_dinamica(html_source):
     if not linhas:
         return []
 
-    # MATRIZ DE CONFIGURAÇÃO DTO (Força a realidade do DOM a casar com o SQL)
+
+        # MATRIZ DE CONFIGURAÇÃO DTO (Atualizada)
     MAPA_DE_SINTAXE = {
         "n": "pos",
-        "r": "aproveitamento",     # Patch: Rendimento
+        "r": "aproveitamento",
+        "s": "sg",                 # [PATCH] Saldo de Gols
         "pe": "empate",
-        "pvm": "mandante_1",       # Patch: Prob. Mandante
-        "pvv": "visitante_1",      # Patch: Prob. Visitante
-        "pdm": "rebaixamento",     # Patch: Prob. Descenso
-        "pc": "campeão",           # Patch: Prob. Campeão
-        "pl": "libertadores",      # Patch: Prob. Libertadores
-        "ps": "sulamericana",      # Patch: Prob. Sulamericana
-        "partidas": "jogos",       # Patch: Normalização de eventos
-        "times": "equipe",         # Patch: Normalização de entidade
+        "pvm": "mandante_1",
+        "pvv": "visitante_1",
+        "pdm": "rebaixamento",
+        "pc": "campeão",
+        "pl": "libertadores",
+        "ps": "sulamericana",
+        "partidas": "jogos",
+        "times": "equipe",
         "gols_marcados": "gols",
         "gols_sofridos": "gols",
         "campeao": "campeão"
     }
+    
     
     linha_cabecalho = linhas[0]
     chaves_brutas = [sanitizar_chave(th.get_text(strip=True)) for th in linha_cabecalho.find_all(['th', 'td'])]
