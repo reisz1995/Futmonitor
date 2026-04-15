@@ -34,14 +34,14 @@ NODOS_SISTEMA = {
 def sanitizar_chave(texto):
     """Padroniza chaves de dicionário para o formato SQL snake_case."""
     texto = texto.lower().strip()
-    texto = re.sub(r'[^\w\s]', '', texto)  # Remove pontuação
-    texto = re.sub(r'\s+', '_', texto)     # Substitui espaços por underscores
+    texto = re.sub(r'[^\w\s]', '', texto)  
+    texto = re.sub(r'\s+', '_', texto)     
     return texto if texto else "coluna_desconhecida"
 
 def extrair_matriz_dinamica(html_source):
     """
-    Decodificador universal.
-    Mapeia os cabeçalhos <th> e emparelha com as células <td> dinamicamente.
+    Sub-rotina de decodificação.
+    Executa a varredura do DOM e aplica o hotfix de deduplicação de chaves.
     """
     soup = BeautifulSoup(html_source, 'html.parser')
     tabelas = soup.find_all('table')
@@ -55,59 +55,7 @@ def extrair_matriz_dinamica(html_source):
     if not linhas:
         return []
 
-    # Extração paramétrica do cabeçalho
-    linha_cabecalho = linhas[0]
-    chaves = [sanitizar_chave(th.get_text(strip=True)) for th in linha_cabecalho.find_all(['th', 'td'])]
-    
-    dados_processados = []
-
-    # Processamento vetorial das linhas subsequentes
-    for idx in range(1, len(linhas)):
-        colunas = linhas[idx].find_all(['td', 'th'])
-        
-        # Bypass em linhas anômalas ou incompletas
-        if len(colunas) != len(chaves):
-            continue
-            
-        entidade = {}
-        for k_idx, chave in enumerate(chaves):
-            valor_bruto = colunas[k_idx].get_text(strip=True)
-            
-            # Inferência de tipo estatístico (inteiro, float ou string)
-            if valor_bruto.isdigit():
-                entidade[chave] = int(valor_bruto)
-            elif valor_bruto.replace('.', '', 1).isdigit() and valor_bruto.count('.') == 1:
-                entidade[chave] = float(valor_bruto)
-            elif '%' in valor_bruto:
-                try:
-                    entidade[chave] = float(valor_bruto.replace('%', '').replace(',', '.'))
-                except:
-                    entidade[chave] = valor_bruto
-            else:
-                entidade[chave] = valor_bruto
-
-        entidade['data_atualizacao'] = datetime.now().isoformat()
-        dados_processados.append(entidade)
-
-    return dados_processados
-
-def operar_pipeline_multinodo():
-    """Motor central: orquestra iteração, extração e persistência para os 14 nós."""
-    from seleniumbase import SB
-    
-    print("[SYS] INICIALIZANDO ROTINA DE VARREDURA MULTI-NÓ")
-    
-    with SB(uc=True, headless=True) as sb:
-        for nome_tabela, url_alvo in NODOS_SISTEMA.items():
-            print(f"\n[EXEC] Estabelecendo vetor de conexão: {url_alvo}")
-            
-            try:
-                sb.uc_open_with_reconnect(url_alvo, reconnect_time=2)
-                sb.sleep(1.5) # Latência otimizada para o servidor da UFMG
-
-                          
-
-    # Extração paramétrica do cabeçalho com Deduplicação de Colisão
+    # PATCH APLICADO AQUI: Extração paramétrica com Deduplicação de Colisão
     linha_cabecalho = linhas[0]
     chaves_brutas = [sanitizar_chave(th.get_text(strip=True)) for th in linha_cabecalho.find_all(['th', 'td'])]
     
@@ -119,26 +67,74 @@ def operar_pipeline_multinodo():
             base = f"{c}_{contador}"
             contador += 1
         chaves.append(base)
+    
+    dados_processados = []
 
+    # Processamento vetorial das linhas subsequentes
+    for idx in range(1, len(linhas)):
+        colunas = linhas[idx].find_all(['td', 'th'])
+        
+        if len(colunas) != len(chaves):
+            continue
+            
+        entidade = {}
+        for k_idx, chave in enumerate(chaves):
+            valor_bruto = colunas[k_idx].get_text(strip=True)
+            
+            # Inferência matemática de tipos
+            if valor_bruto.isdigit():
+                entidade[chave] = int(valor_bruto)
+            elif valor_bruto.replace('.', '', 1).isdigit() and valor_bruto.count('.') == 1:
+                entidade[chave] = float(valor_bruto)
+            elif '%' in valor_bruto:
+                try:
+                    entidade[chave] = float(valor_bruto.replace('%', '').replace(',', '.'))
+                except ValueError:
+                    entidade[chave] = valor_bruto
+            else:
+                entidade[chave] = valor_bruto
+
+        entidade['data_atualizacao'] = datetime.now().isoformat()
+        dados_processados.append(entidade)
+
+    return dados_processados
+
+def operar_pipeline_multinodo():
+    """Motor central: orquestra iteração de rede, extração (parser) e persistência."""
+    from seleniumbase import SB
+    
+    print("[SYS] INICIALIZANDO ROTINA DE VARREDURA MULTI-NÓ")
+    
+    with SB(uc=True, headless=True) as sb:
+        for nome_tabela, url_alvo in NODOS_SISTEMA.items():
+            print(f"\n[EXEC] Estabelecendo vetor de conexão: {url_alvo}")
+            
+            try:
+                sb.uc_open_with_reconnect(url_alvo, reconnect_time=2)
+                sb.sleep(1.5) # Latência otimizada para estabilidade
+                
+                # Chamada restaurada para a sub-rotina de decodificação
+                matriz_dados = extrair_matriz_dinamica(sb.get_page_source())
+                
+                if matriz_dados:
+                    print(f"       [OK] Matriz mapeada: {len(matriz_dados)} vetores compilados.")
                     
-                    # 1. Persistência Local (Backup/Log)
+                    # 1. Camada de Segurança: Persistência Local
                     arquivo_dump = f"dump_{nome_tabela}.json"
                     with open(arquivo_dump, 'w', encoding='utf-8') as f:
                         json.dump(matriz_dados, f, ensure_ascii=False, indent=2)
                     
-                    # 2. Persistência Remota (Supabase)
+                    # 2. Camada de Produção: Persistência Supabase
                     if supabase:
-                        # Nota: As 14 tabelas devem ser previamente instanciadas no dashboard do Supabase
-                        # com a diretiva RLS configurada.
                         supabase.table(nome_tabela).insert(matriz_dados).execute()
-                        print(f"       [OK] Sincronização commitada no Supabase: Tabela '{nome_tabela}'")
+                        print(f"       [OK] Sincronização commitada no Supabase: HUD '{nome_tabela}'")
                     else:
-                        print("       [WARN] Supabase inativo. Persistência restrita ao sistema de arquivos local.")
+                        print("       [WARN] Supabase offline. Persistência de I/O restrita ao disco.")
                 else:
-                    print(f"       [ERR] Falha de extração. Estrutura do DOM inválida ou vazia.")
+                    print(f"       [ERR] Quebra de contrato de dados. DOM estéril ou inacessível.")
             
             except Exception as e:
-                print(f"       [FATAL] Exceção crítica no nó {nome_tabela}: {e}")
+                print(f"       [FATAL] Exceção crítica bloqueando o nó {nome_tabela}: {e}")
 
 if __name__ == "__main__":
     operar_pipeline_multinodo()
