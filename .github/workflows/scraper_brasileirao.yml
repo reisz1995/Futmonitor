@@ -1,4 +1,4 @@
-name: Scraper Brasileirão Série A
+name: Scraper Brasileirão Série A - Cloudflare Bypass
 
 on:
   schedule:
@@ -22,23 +22,36 @@ jobs:
         python-version: '3.11'
         cache: 'pip'
 
-    - name: Instalar dependências
+    - name: Instalar dependências Python
       run: |
-        pip install -r requirements.txt
+        pip install -r requirements_v2.txt
 
-    - name: Executar scraper
+    - name: Instalar browsers do Playwright
+      run: |
+        playwright install chromium
+
+    - name: Executar scraper v2 (SeleniumBase/Playwright)
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
-        python scraper_brasileirao.py
+        python scraper_brasileirao_v2.py
 
-    - name: Upload logs (se falhar)
+    - name: Upload backup JSON
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: brasileirao-backup
+        path: brasileirao_backup_*.json
+        retention-days: 30
+        if-no-files-found: ignore
+
+    - name: Upload debug HTML (se falhar)
       if: failure()
       uses: actions/upload-artifact@v4
       with:
-        name: error-logs
-        path: |
-          *.log
-          error.txt
+        name: debug-html
+        path: debug_page.html
         retention-days: 5
+        if-no-files-found: ignore
+        
