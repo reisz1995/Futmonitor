@@ -104,11 +104,22 @@ def operar_pipeline_multinodo():
             try:
                 sb.uc_open_with_reconnect(url_alvo, reconnect_time=2)
                 sb.sleep(1.5) # Latência otimizada para o servidor da UFMG
-                
-                matriz_dados = extrair_matriz_dinamica(sb.get_page_source())
-                
-                if matriz_dados:
-                    print(f"       Matriz mapeada: {len(matriz_dados)} registros extraídos.")
+
+                          
+
+    # Extração paramétrica do cabeçalho com Deduplicação de Colisão
+    linha_cabecalho = linhas[0]
+    chaves_brutas = [sanitizar_chave(th.get_text(strip=True)) for th in linha_cabecalho.find_all(['th', 'td'])]
+    
+    chaves = []
+    for c in chaves_brutas:
+        base = c
+        contador = 1
+        while base in chaves:
+            base = f"{c}_{contador}"
+            contador += 1
+        chaves.append(base)
+
                     
                     # 1. Persistência Local (Backup/Log)
                     arquivo_dump = f"dump_{nome_tabela}.json"
