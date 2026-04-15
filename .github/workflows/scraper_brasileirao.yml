@@ -35,7 +35,7 @@ jobs:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
-        python scraper_brasileirao_v2.py
+        python scraper_brasileirao.py
 
     - name: Upload backup JSON
       if: always()
