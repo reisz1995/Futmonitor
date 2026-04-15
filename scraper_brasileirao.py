@@ -302,54 +302,56 @@ def main():
     print(f"⏰ Iniciado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
     print("="*60)
 
-    # Executar scraping
+    
+   # Executar scraping
     dados = scrape_brasileirao()
 
-                if dados:
-            print(f"\n📊 Dados coletados de {len(dados)} times")
+    if dados:
+        print(f"\n📊 Dados coletados de {len(dados)} times")
 
-            # Mostrar preview
-            print("\n📈 Preview da classificação:")
-            print("-" * 50)
-            for time in dados[:5]:
-                print(f"{time['posicao']:2d}. {time['nome_time'][:25]:25s} - {time['pontos']:2d} pts ({time['jogos']}J)")
-            print("-" * 50)
+        # Mostrar preview
+        print("\n📈 Preview da classificação:")
+        print("-" * 50)
+        for time in dados[:5]:
+            print(f"{time['posicao']:2d}. {time['nome_time'][:25]:25s} - {time['pontos']:2d} pts ({time['jogos']}J)")
+        print("-" * 50)
 
-            # Salvar backup local
-            salvar_backup_local(dados)
+        # Salvar backup local
+        salvar_backup_local(dados)
 
-            # Enviar para Supabase
-            if supabase:
-                print("\n📡 Enviando para o Supabase...")
-                enviar_para_supabase(dados)
-            else:
-                print("\n⚠️ Dados não enviados para Supabase (cliente não configurado)")
-                print("   Dados disponíveis no arquivo JSON de backup")
-
-            print("\n✅ Processo concluído com sucesso!")
-
+        # Enviar para Supabase
+        if supabase:
+            print("\n📡 Enviando para o Supabase...")
+            enviar_para_supabase(dados)
         else:
-            print("\n❌ Nenhum dado coletado")
-            print("   Possíveis causas:")
-            print("   - Site bloqueando requisições automatizadas (403)")
-            print("   - Estrutura HTML alterada")
-            print("   - Problemas de conectividade")
+            print("\n⚠️ Dados não enviados para Supabase (cliente não configurado)")
+            print("   Dados disponíveis no arquivo JSON de backup")
 
-            # Tentar fallback com dados estáticos para teste
-            print("\n🔄 Tentando fallback com dados estáticos...")
-            dados_fallback = [
-                {"posicao": 1, "nome_time": "Palmeiras", "pontos": 26, "jogos": 11, "vitorias": 8, "empates": 2, "derrotas": 1, "gols_marcados": 21, "gols_sofridos": 10, "saldo_gols": 11, "data_atualizacao": datetime.now().isoformat()},
-                {"posicao": 2, "nome_time": "Flamengo", "pontos": 20, "jogos": 10, "vitorias": 6, "empates": 2, "derrotas": 2, "gols_marcados": 18, "gols_sofridos": 10, "saldo_gols": 8, "data_atualizacao": datetime.now().isoformat()},
-                {"posicao": 3, "nome_time": "São Paulo", "pontos": 20, "jogos": 11, "vitorias": 6, "empates": 2, "derrotas": 3, "gols_marcados": 15, "gols_sofridos": 9, "saldo_gols": 6, "data_atualizacao": datetime.now().isoformat()},
-            ]
+        print("\n✅ Processo concluído com sucesso!")
 
-            if supabase:
-                print("\n📡 Enviando dados de fallback para teste...")
-                enviar_para_supabase(dados_fallback)
+    else:
+        print("\n❌ Nenhum dado coletado")
+        print("   Possíveis causas:")
+        print("   - Site bloqueando requisições automatizadas (403)")
+        print("   - Estrutura HTML alterada")
+        print("   - Problemas de conectividade")
 
-        print("\n" + "="*60)
-        print(f"🏁 Finalizado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
-        print("="*60)
+        # Tentar fallback com dados estáticos para teste
+        print("\n🔄 Tentando fallback com dados estáticos...")
+        dados_fallback = [
+            {"posicao": 1, "nome_time": "Palmeiras", "pontos": 26, "jogos": 11, "vitorias": 8, "empates": 2, "derrotas": 1, "gols_marcados": 21, "gols_sofridos": 10, "saldo_gols": 11, "data_atualizacao": datetime.now().isoformat()},
+            {"posicao": 2, "nome_time": "Flamengo", "pontos": 20, "jogos": 10, "vitorias": 6, "empates": 2, "derrotas": 2, "gols_marcados": 18, "gols_sofridos": 10, "saldo_gols": 8, "data_atualizacao": datetime.now().isoformat()},
+            {"posicao": 3, "nome_time": "São Paulo", "pontos": 20, "jogos": 11, "vitorias": 6, "empates": 2, "derrotas": 3, "gols_marcados": 15, "gols_sofridos": 9, "saldo_gols": 6, "data_atualizacao": datetime.now().isoformat()},
+        ]
+
+        if supabase:
+            print("\n📡 Enviando dados de fallback para teste...")
+            enviar_para_supabase(dados_fallback)
+
+    print("\n" + "="*60)
+    print(f"🏁 Finalizado em: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}")
+    print("="*60)
 
 if __name__ == "__main__":
     main()
+    
