@@ -2,5 +2,5 @@ requests
 beautifulsoup4
 supabase
 python-dotenv
-curl_cffi
-fake-useragent
+seleniumbase
+playwright
