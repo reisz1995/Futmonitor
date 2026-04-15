@@ -150,18 +150,13 @@ def operar_pipeline_multinodo():
                     arquivo_dump = f"dump_{nome_tabela}.json"
                     with open(arquivo_dump, 'w', encoding='utf-8') as f:
                         json.dump(matriz_dados, f, ensure_ascii=False, indent=2)
-                    
-                    # 2. Camada de Produção: Persistência Supabase
+
+
+                   # 2. Camada de Produção: Persistência Supabase
                     if supabase:
-                        supabase.table(nome_tabela).insert(matriz_dados).execute()
-                        print(f"       [OK] Sincronização commitada no Supabase: HUD '{nome_tabela}'")
-                    else:
-                        print("       [WARN] Supabase offline. Persistência de I/O restrita ao disco.")
-                else:
-                    print(f"       [ERR] Quebra de contrato de dados. DOM estéril ou inacessível.")
-            
-            except Exception as e:
-                print(f"       [FATAL] Exceção crítica bloqueando o nó {nome_tabela}: {e}")
+                        # O motor de estado agora realiza merge in-place (atualiza se existir, insere se novo)
+                        supabase.table(nome_tabela).upsert(matriz_dados).execute()
+                        print(f"       [OK] Sincronização estabilizada (UPSERT): HUD '{nome_tabela}'")
 
 if __name__ == "__main__":
     operar_pipeline_multinodo()
