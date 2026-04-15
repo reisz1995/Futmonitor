@@ -125,10 +125,10 @@ def extrair_matriz_dinamica(html_source):
 
     return dados_processados
     
-
 def operar_pipeline_multinodo():
-    """Motor central: orquestra iteração de rede, extração (parser) e persistência."""
+    """Motor central: orquestra iteração de rede, extração (parser) e persistência de alta performance."""
     from seleniumbase import SB
+    import json
     
     print("[SYS] INICIALIZANDO ROTINA DE VARREDURA MULTI-NÓ")
     
@@ -140,23 +140,30 @@ def operar_pipeline_multinodo():
                 sb.uc_open_with_reconnect(url_alvo, reconnect_time=2)
                 sb.sleep(1.5) # Latência otimizada para estabilidade
                 
-                # Chamada restaurada para a sub-rotina de decodificação
+                # Decodificação da árvore DOM
                 matriz_dados = extrair_matriz_dinamica(sb.get_page_source())
                 
                 if matriz_dados:
                     print(f"       [OK] Matriz mapeada: {len(matriz_dados)} vetores compilados.")
                     
-                    # 1. Camada de Segurança: Persistência Local
+                    # 1. Camada de Segurança: Persistência Local (Log de Contingência)
                     arquivo_dump = f"dump_{nome_tabela}.json"
                     with open(arquivo_dump, 'w', encoding='utf-8') as f:
                         json.dump(matriz_dados, f, ensure_ascii=False, indent=2)
 
-
-                   # 2. Camada de Produção: Persistência Supabase
+                    # 2. Camada de Produção: Persistência Supabase (Merge de Estados)
                     if supabase:
-                        # O motor de estado agora realiza merge in-place (atualiza se existir, insere se novo)
+                        # Operação matemática de Upsert: Atualiza entidades existentes, insere novas
                         supabase.table(nome_tabela).upsert(matriz_dados).execute()
                         print(f"       [OK] Sincronização estabilizada (UPSERT): HUD '{nome_tabela}'")
+                    else:
+                        print(f"       [WARN] Supabase offline. Dados retidos localmente em '{arquivo_dump}'")
+                else:
+                    print("       [ERR] Extração abortada. Vetor de dados retornou matriz nula.")
+            
+            except Exception as e:
+                # Blindagem: Erros isolados não quebram a iteração dos demais nós
+                print(f"       [FATAL] Quebra de contrato no nó {nome_tabela}. Exceção: {e}")
 
 if __name__ == "__main__":
     operar_pipeline_multinodo()
